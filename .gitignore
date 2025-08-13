@@ -1,0 +1,36 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Dependency directories (uncomment to ignore vendor directory)
+# vendor/
+
+# Environment variables file
+.env
+
+# Go build cache
+.go_build_cache/
+
+# IDE and editor specific files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Operating System generated files
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+tmp/
