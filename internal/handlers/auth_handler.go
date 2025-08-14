@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"exam-test/internal/schemas"
 	"exam-test/internal/services"
 	"exam-test/internal/utils"
@@ -8,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type AuthHandler interface {
@@ -45,6 +47,18 @@ func (a *authHandler) RegisterAdmin(ctx *gin.Context) {
 		},
 	)
 	if err != nil {
+		var pgErr *pgconn.PgError
+
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == "23505" {
+				ctx.JSON(
+					http.StatusBadRequest,
+					gin.H{"error": "Admin already exists"},
+				)
+				return
+			}
+		}
+
 		ctx.JSON(
 			http.StatusInternalServerError,
 			gin.H{"error": "Failed to create admin"},
