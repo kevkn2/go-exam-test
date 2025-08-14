@@ -13,11 +13,42 @@ type AuthHandler interface {
 	AuthenticateUser(ctx *gin.Context)
 	RegisterAdmin(ctx *gin.Context)
 	ValidAdmin(ctx *gin.Context)
+	ValidStudent(ctx *gin.Context)
 }
 
 type authHandler struct {
 	userService services.UserService
 	jwtUtils    utils.JWTUtils
+}
+
+// ValidStudent implements AuthHandler.
+func (a *authHandler) ValidStudent(ctx *gin.Context) {
+	userId, err := a.jwtUtils.TokenValid(ctx)
+	if err != nil {
+		ctx.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": err.Error()},
+		)
+		return
+	}
+
+	user, err := a.userService.AuthorizeStudent(userId)
+	if err != nil {
+		ctx.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": "user not found"},
+		)
+		return
+	}
+
+	ctx.JSON(
+		http.StatusOK,
+		schemas.UserInfoSchema{
+			ID:        user.ID,
+			Email:     user.Email,
+			Authority: user.Authority,
+		},
+	)
 }
 
 // ValidAdmin implements AuthHandler.
@@ -40,7 +71,14 @@ func (a *authHandler) ValidAdmin(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, user)
+	ctx.JSON(
+		http.StatusOK,
+		schemas.UserInfoSchema{
+			ID:        user.ID,
+			Email:     user.Email,
+			Authority: user.Authority,
+		},
+	)
 }
 
 // RegisterAdmin implements AuthHandler.
@@ -77,10 +115,10 @@ func (a *authHandler) RegisterAdmin(ctx *gin.Context) {
 
 	ctx.JSON(
 		http.StatusCreated,
-		gin.H{
-			"id":        user.ID,
-			"email":     user.Email,
-			"authority": user.Authority,
+		schemas.UserInfoSchema{
+			ID:        user.ID,
+			Email:     user.Email,
+			Authority: user.Authority,
 		},
 	)
 }
@@ -127,9 +165,9 @@ func (a *authHandler) AuthenticateUser(ctx *gin.Context) {
 
 	ctx.JSON(
 		http.StatusOK,
-		gin.H{
-			"token": token,
-			"type":  "Bearer",
+		schemas.AuthResponseSchema{
+			Token: token,
+			Type:  "Bearer",
 		},
 	)
 }

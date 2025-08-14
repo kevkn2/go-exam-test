@@ -19,3 +19,9 @@ type AuthResponseSchema struct {
 	Token string `json:"token"`
 	Type  string `json:"type"`
 }
+
+type UserInfoSchema struct {
+	ID        uint   `json:"id"`
+	Email     string `json:"email"`
+	Authority string `json:"authority"`
+}

@@ -14,7 +14,7 @@ type UserService interface {
 	GetUser(email string) (*models.User, error)
 	CreateAdmin(registerSchema schemas.RegisterRequestSchema) (*models.User, error)
 	AuthorizeAdmin(id uint) (*models.User, error)
-	AuthorizeStudent(id uint) models.User
+	AuthorizeStudent(id uint) (*models.User, error)
 }
 
 type userService struct {
@@ -54,8 +54,8 @@ func (u *userService) AuthorizeAdmin(id uint) (*models.User, error) {
 }
 
 // AuthorizeStudent implements UserService.
-func (u *userService) AuthorizeStudent(id uint) models.User {
-	panic("unimplemented")
+func (u *userService) AuthorizeStudent(id uint) (*models.User, error) {
+	return u.userRepo.GetStudent(id)
 }
 
 func NewUserService(userRepo repositories.UserRepository) UserService {
