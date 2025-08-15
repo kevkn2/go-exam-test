@@ -10,9 +10,17 @@ type RegisterRequestSchema struct {
 	Password string `json:"password" binding:"required"`
 }
 
+type StudentSchema struct {
+	Name   string
+	School string
+	UserID string
+}
+
 type RegisterStudentRequestSchema struct {
-	RegisterRequestSchema
-	School string `json:"school" binding:"required"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
+	Name     string `json:"name" binding:"required"`
+	School   string `json:"school" binding:"required"`
 }
 
 type AuthResponseSchema struct {

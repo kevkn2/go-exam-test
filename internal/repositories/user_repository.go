@@ -7,6 +7,7 @@ import (
 )
 
 type UserRepository interface {
+	WithTx(tx *gorm.DB) UserRepository
 	GetUser(email string) (*models.User, error)
 	GetAdmin(id uint) (*models.User, error)
 	GetStudent(id uint) (*models.User, error)
@@ -15,6 +16,11 @@ type UserRepository interface {
 
 type userRepository struct {
 	db *gorm.DB
+}
+
+// WithTx implements UserRepository.
+func (u *userRepository) WithTx(tx *gorm.DB) UserRepository {
+	return &userRepository{db: tx}
 }
 
 // CreateUser implements UserRepository.

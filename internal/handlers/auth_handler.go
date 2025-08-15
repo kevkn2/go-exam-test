@@ -12,13 +12,57 @@ import (
 type AuthHandler interface {
 	AuthenticateUser(ctx *gin.Context)
 	RegisterAdmin(ctx *gin.Context)
+	RegisterStudent(ctx *gin.Context)
 	ValidAdmin(ctx *gin.Context)
 	ValidStudent(ctx *gin.Context)
 }
 
 type authHandler struct {
-	userService services.UserService
+	authService services.AuthService
 	jwtUtils    utils.JWTUtils
+}
+
+// RegisterStudent implements AuthHandler.
+func (a *authHandler) RegisterStudent(ctx *gin.Context) {
+	var req schemas.RegisterStudentRequestSchema
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	hashedPassword, err := utils.HashPassword(req.Password)
+	if err != nil {
+		ctx.JSON(
+			http.StatusInternalServerError,
+			gin.H{"error": "Failed to hash password"},
+		)
+		return
+	}
+
+	user, err := a.authService.CreateStudent(
+		schemas.RegisterStudentRequestSchema{
+			Email:    req.Email,
+			Password: hashedPassword,
+			Name:     req.Name,
+			School:   req.School,
+		},
+	)
+	if err != nil {
+		ctx.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": err.Error()},
+		)
+		return
+	}
+
+	ctx.JSON(
+		http.StatusCreated,
+		gin.H{
+			"user":        user.User,
+			"studentData": user.Student,
+		},
+	)
 }
 
 // ValidStudent implements AuthHandler.
@@ -32,7 +76,7 @@ func (a *authHandler) ValidStudent(ctx *gin.Context) {
 		return
 	}
 
-	user, err := a.userService.AuthorizeStudent(userId)
+	user, err := a.authService.AuthorizeStudent(userId)
 	if err != nil {
 		ctx.JSON(
 			http.StatusBadRequest,
@@ -62,7 +106,7 @@ func (a *authHandler) ValidAdmin(ctx *gin.Context) {
 		return
 	}
 
-	user, err := a.userService.AuthorizeAdmin(userId)
+	user, err := a.authService.AuthorizeAdmin(userId)
 	if err != nil {
 		ctx.JSON(
 			http.StatusBadRequest,
@@ -99,7 +143,7 @@ func (a *authHandler) RegisterAdmin(ctx *gin.Context) {
 		return
 	}
 
-	user, err := a.userService.CreateAdmin(
+	user, err := a.authService.CreateAdmin(
 		schemas.RegisterRequestSchema{
 			Email:    req.Email,
 			Password: hashedPassword,
@@ -132,7 +176,7 @@ func (a *authHandler) AuthenticateUser(ctx *gin.Context) {
 		return
 	}
 
-	user, err := a.userService.GetUser(req.Email)
+	user, err := a.authService.GetUser(req.Email)
 	if err != nil {
 		ctx.JSON(
 			http.StatusUnauthorized,
@@ -173,11 +217,11 @@ func (a *authHandler) AuthenticateUser(ctx *gin.Context) {
 }
 
 func NewAuthHandler(
-	userService services.UserService,
+	authService services.AuthService,
 	jwtUtils utils.JWTUtils,
 ) AuthHandler {
 	return &authHandler{
-		userService: userService,
+		authService: authService,
 		jwtUtils:    jwtUtils,
 	}
 }
