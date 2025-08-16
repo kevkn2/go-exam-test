@@ -22,7 +22,8 @@ func main() {
 	jwtUtils := utils.NewJWTUtils(env)
 
 	userRepository := repositories.NewUserRepository(db)
-	userService := services.NewUserService(userRepository)
+	studentRepository := repositories.NewStudentRepository(db)
+	userService := services.NewAuthService(userRepository, studentRepository, db)
 	authHandler := handlers.NewAuthHandler(userService, jwtUtils)
 	authRoutes := routes.NewAuthRoute(authHandler)
 
