@@ -4,6 +4,7 @@ import (
 	"exam-test/internal/schemas"
 	"exam-test/internal/services"
 	"exam-test/internal/utils"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -81,6 +82,7 @@ func (a *authHandler) ValidStudent(ctx *gin.Context) {
 
 	user, err := a.authService.AuthorizeStudent(userId)
 	if err != nil {
+		log.Printf("%v", err)
 		ctx.JSON(
 			http.StatusBadRequest,
 			gin.H{"error": "user not found"},

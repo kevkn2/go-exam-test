@@ -133,7 +133,7 @@ func (u *authService) AuthorizeStudent(id uint) (struct {
 		}{}, err
 	}
 
-	student, err := u.studentRepo.GetStudent(id)
+	student, err := u.studentRepo.GetStudent(user.ID)
 	if err != nil {
 		return struct {
 			*models.User

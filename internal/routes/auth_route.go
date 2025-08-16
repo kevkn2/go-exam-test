@@ -22,6 +22,7 @@ func (a *authRoute) Routes(route *gin.Engine) {
 	auth.POST("/registerAdmin", a.authHandler.RegisterAdmin)
 	auth.POST("/registerStudent", a.authHandler.RegisterStudent)
 	auth.GET("/validateAdmin", a.authHandler.ValidAdmin)
+	auth.GET("/validateStudent", a.authHandler.ValidStudent)
 }
 
 func NewAuthRoute(authHandler handlers.AuthHandler) AuthRoute {

@@ -30,7 +30,7 @@ func (s *studentRepository) CreateStudent(student models.Student) (*models.Stude
 // GetStudent implements StudentRepository.
 func (s *studentRepository) GetStudent(id uint) (*models.Student, error) {
 	var student models.Student
-	err := s.db.Where("UserID", id).Find(&student).Error
+	err := s.db.Where("user_id", id).Find(&student).Error
 	return &student, err
 }
 
