@@ -59,8 +59,11 @@ func (a *authHandler) RegisterStudent(ctx *gin.Context) {
 	ctx.JSON(
 		http.StatusCreated,
 		gin.H{
-			"user":        user.User,
-			"studentData": user.Student,
+			"userId":    user.User.ID,
+			"email":     user.User.Email,
+			"authority": user.User.Authority,
+			"name":      user.Student.Name,
+			"school":    user.Student.School,
 		},
 	)
 }
