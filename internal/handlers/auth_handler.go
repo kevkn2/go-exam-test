@@ -90,10 +90,12 @@ func (a *authHandler) ValidStudent(ctx *gin.Context) {
 
 	ctx.JSON(
 		http.StatusOK,
-		schemas.UserInfoSchema{
-			ID:        user.ID,
-			Email:     user.Email,
-			Authority: user.Authority,
+		gin.H{
+			"userId":    user.User.ID,
+			"email":     user.User.Email,
+			"authority": user.User.Authority,
+			"name":      user.Student.Name,
+			"school":    user.Student.School,
 		},
 	)
 }

@@ -33,3 +33,11 @@ type UserInfoSchema struct {
 	Email     string `json:"email"`
 	Authority string `json:"authority"`
 }
+
+type StudentInfoSchema struct {
+	ID        uint   `json:"id"`
+	Email     string `json:"email"`
+	Authority string `json:"authority"`
+	Name      string `json:"name"`
+	School    string `json:"school"`
+}

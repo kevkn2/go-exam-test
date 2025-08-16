@@ -19,7 +19,10 @@ type AuthService interface {
 		*models.Student
 	}, error)
 	AuthorizeAdmin(id uint) (*models.User, error)
-	AuthorizeStudent(id uint) (*models.User, error)
+	AuthorizeStudent(id uint) (struct {
+		*models.User
+		*models.Student
+	}, error)
 }
 
 type authService struct {
@@ -118,8 +121,33 @@ func (u *authService) AuthorizeAdmin(id uint) (*models.User, error) {
 }
 
 // AuthorizeStudent implements UserService.
-func (u *authService) AuthorizeStudent(id uint) (*models.User, error) {
-	return u.userRepo.GetStudent(id)
+func (u *authService) AuthorizeStudent(id uint) (struct {
+	*models.User
+	*models.Student
+}, error) {
+	user, err := u.userRepo.GetStudent(id)
+	if err != nil {
+		return struct {
+			*models.User
+			*models.Student
+		}{}, err
+	}
+
+	student, err := u.studentRepo.GetStudent(id)
+	if err != nil {
+		return struct {
+			*models.User
+			*models.Student
+		}{}, err
+	}
+
+	return struct {
+		*models.User
+		*models.Student
+	}{
+		User:    user,
+		Student: student,
+	}, nil
 }
 
 func NewAuthService(
