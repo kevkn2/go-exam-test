@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"errors"
 	"exam-test/internal/schemas"
 	"exam-test/internal/services"
 	"exam-test/internal/utils"
@@ -9,17 +8,128 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type AuthHandler interface {
 	AuthenticateUser(ctx *gin.Context)
 	RegisterAdmin(ctx *gin.Context)
+	RegisterStudent(ctx *gin.Context)
+	ValidAdmin(ctx *gin.Context)
+	ValidStudent(ctx *gin.Context)
 }
 
 type authHandler struct {
-	userService services.UserService
+	authService services.AuthService
 	jwtUtils    utils.JWTUtils
+}
+
+// RegisterStudent implements AuthHandler.
+func (a *authHandler) RegisterStudent(ctx *gin.Context) {
+	var req schemas.RegisterStudentRequestSchema
+
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	hashedPassword, err := utils.HashPassword(req.Password)
+	if err != nil {
+		ctx.JSON(
+			http.StatusInternalServerError,
+			gin.H{"error": "Failed to hash password"},
+		)
+		return
+	}
+
+	user, err := a.authService.CreateStudent(
+		schemas.RegisterStudentRequestSchema{
+			Email:    req.Email,
+			Password: hashedPassword,
+			Name:     req.Name,
+			School:   req.School,
+		},
+	)
+	if err != nil {
+		ctx.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": err.Error()},
+		)
+		return
+	}
+
+	ctx.JSON(
+		http.StatusCreated,
+		gin.H{
+			"userId":    user.User.ID,
+			"email":     user.User.Email,
+			"authority": user.User.Authority,
+			"name":      user.Student.Name,
+			"school":    user.Student.School,
+		},
+	)
+}
+
+// ValidStudent implements AuthHandler.
+func (a *authHandler) ValidStudent(ctx *gin.Context) {
+	userId, err := a.jwtUtils.TokenValid(ctx)
+	if err != nil {
+		ctx.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": err.Error()},
+		)
+		return
+	}
+
+	user, err := a.authService.AuthorizeStudent(userId)
+	if err != nil {
+		log.Printf("%v", err)
+		ctx.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": "user not found"},
+		)
+		return
+	}
+
+	ctx.JSON(
+		http.StatusOK,
+		gin.H{
+			"userId":    user.User.ID,
+			"email":     user.User.Email,
+			"authority": user.User.Authority,
+			"name":      user.Student.Name,
+			"school":    user.Student.School,
+		},
+	)
+}
+
+// ValidAdmin implements AuthHandler.
+func (a *authHandler) ValidAdmin(ctx *gin.Context) {
+	userId, err := a.jwtUtils.TokenValid(ctx)
+	if err != nil {
+		ctx.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": err.Error()},
+		)
+		return
+	}
+
+	user, err := a.authService.AuthorizeAdmin(userId)
+	if err != nil {
+		ctx.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": "user not found"},
+		)
+		return
+	}
+
+	ctx.JSON(
+		http.StatusOK,
+		schemas.UserInfoSchema{
+			ID:        user.ID,
+			Email:     user.Email,
+			Authority: user.Authority,
+		},
+	)
 }
 
 // RegisterAdmin implements AuthHandler.
@@ -40,38 +150,26 @@ func (a *authHandler) RegisterAdmin(ctx *gin.Context) {
 		return
 	}
 
-	user, err := a.userService.CreateAdmin(
+	user, err := a.authService.CreateAdmin(
 		schemas.RegisterRequestSchema{
 			Email:    req.Email,
 			Password: hashedPassword,
 		},
 	)
 	if err != nil {
-		var pgErr *pgconn.PgError
-
-		if errors.As(err, &pgErr) {
-			if pgErr.Code == "23505" {
-				ctx.JSON(
-					http.StatusBadRequest,
-					gin.H{"error": "Admin already exists"},
-				)
-				return
-			}
-		}
-
 		ctx.JSON(
-			http.StatusInternalServerError,
-			gin.H{"error": "Failed to create admin"},
+			http.StatusBadRequest,
+			gin.H{"error": err.Error()},
 		)
 		return
 	}
 
 	ctx.JSON(
 		http.StatusCreated,
-		gin.H{
-			"id":        user.ID,
-			"email":     user.Email,
-			"authority": user.Authority,
+		schemas.UserInfoSchema{
+			ID:        user.ID,
+			Email:     user.Email,
+			Authority: user.Authority,
 		},
 	)
 }
@@ -85,7 +183,7 @@ func (a *authHandler) AuthenticateUser(ctx *gin.Context) {
 		return
 	}
 
-	user, err := a.userService.GetUser(req.Email)
+	user, err := a.authService.GetUser(req.Email)
 	if err != nil {
 		ctx.JSON(
 			http.StatusUnauthorized,
@@ -109,7 +207,6 @@ func (a *authHandler) AuthenticateUser(ctx *gin.Context) {
 
 	token, err := a.jwtUtils.GenerateToken(user.ID)
 	if err != nil {
-		log.Printf("%v", err.Error())
 		ctx.JSON(
 			http.StatusBadRequest,
 			gin.H{"error": "Invalid Credentials"},
@@ -119,19 +216,19 @@ func (a *authHandler) AuthenticateUser(ctx *gin.Context) {
 
 	ctx.JSON(
 		http.StatusOK,
-		gin.H{
-			"token": token,
-			"type":  "Bearer",
+		schemas.AuthResponseSchema{
+			Token: token,
+			Type:  "Bearer",
 		},
 	)
 }
 
 func NewAuthHandler(
-	userService services.UserService,
+	authService services.AuthService,
 	jwtUtils utils.JWTUtils,
 ) AuthHandler {
 	return &authHandler{
-		userService: userService,
+		authService: authService,
 		jwtUtils:    jwtUtils,
 	}
 }

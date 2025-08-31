@@ -23,7 +23,7 @@ type jwtUtils struct {
 // ExtractToken implements JWTUtils.
 func (j *jwtUtils) ExtractToken(ctx *gin.Context) string {
 	token := ctx.GetHeader("Authorization")
-	if len(token) > 7 && token[:7] == "Bearer" {
+	if len(token) > 7 && token[:6] == "Bearer" {
 		return token[7:]
 	}
 	return ""
@@ -50,7 +50,7 @@ func (j *jwtUtils) TokenValid(ctx *gin.Context) (uint, error) {
 
 	token, err := jwt.Parse(
 		tokenStr,
-		func(t *jwt.Token) (interface{}, error) {
+		func(t *jwt.Token) (any, error) {
 			return []byte(j.SecretKey), nil
 		},
 	)

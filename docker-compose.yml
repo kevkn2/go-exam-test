@@ -1,0 +1,22 @@
+services:
+  exam_test_db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: amb4tukAm
+      POSTGRES_USER: exam_test
+      POSTGRES_DB: exam_test_db
+      POSTGRES_ROOT_PASSWORD: amb4tukAm
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - mynetwork
+
+volumes:
+  pgdata:
+
+networks:
+  mynetwork:
+    driver: bridge
