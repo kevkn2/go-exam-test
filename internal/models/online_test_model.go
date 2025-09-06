@@ -20,3 +20,13 @@ type Question struct {
 	Meta   datatypes.JSON
 	Order  int `gorm:"not null;"`
 }
+
+// Multiple-choice question metadata
+type MCQMeta struct {
+	Options []string `json:"options"`
+}
+
+// True/False metadata
+type TOFMeta struct {
+	Statements []string `json:"statements"`
+}
