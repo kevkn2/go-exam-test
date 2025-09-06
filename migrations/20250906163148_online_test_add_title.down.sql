@@ -1,0 +1,2 @@
+ALTER TABLE online_tests
+DROP COLUMN IF EXISTS title;
