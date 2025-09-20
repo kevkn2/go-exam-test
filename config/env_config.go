@@ -9,6 +9,7 @@ import (
 )
 
 type EnvConfig struct {
+	MODE                        string
 	DB_HOST                     string
 	DB_PORT                     string
 	DB_USER                     string
@@ -31,6 +32,7 @@ func NewEnvConfig() EnvConfig {
 	}
 
 	return EnvConfig{
+		MODE:                        os.Getenv("MODE"),
 		DB_HOST:                     os.Getenv("DB_HOST"),
 		DB_PORT:                     os.Getenv("DB_PORT"),
 		DB_USER:                     os.Getenv("DB_USER"),
