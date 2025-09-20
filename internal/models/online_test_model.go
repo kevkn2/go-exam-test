@@ -15,11 +15,12 @@ type OnlineTest struct {
 
 type Question struct {
 	gorm.Model
-	Type   string `gorm:"size:50;not null;"`
-	Text   string `gorm:"not null;type:text;"`
-	Answer string
-	Meta   datatypes.JSON
-	Order  int `gorm:"not null;"`
+	OnlineTestID uint   `gorm:"not null;"`
+	Type         string `gorm:"size:50;not null;"`
+	Text         string `gorm:"not null;type:text;"`
+	Answer       string
+	Meta         datatypes.JSON
+	Order        int `gorm:"not null;"`
 }
 
 // Multiple-choice question metadata
