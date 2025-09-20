@@ -34,7 +34,12 @@ func (o *onlineTestRepo) CreateTest(onlineTest models.OnlineTest) (*models.Onlin
 
 // GetTest implements OnlineTestRepo.
 func (o *onlineTestRepo) GetTest(testID string) (*models.OnlineTest, error) {
-	panic("unimplemented")
+	var onlineTest models.OnlineTest
+	err := o.db.First(&onlineTest, "test_id = ?", testID).Error
+	if err != nil {
+		return nil, err
+	}
+	return &onlineTest, nil
 }
 
 func NewOnlineTestRepo(db *gorm.DB) OnlineTestRepo {

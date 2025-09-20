@@ -1,6 +1,6 @@
 package schemas
 
-type OnlineTestRequestSchema struct {
+type OnlineTestSchema struct {
 	Title     string           `json:"title" binding:"required"`
 	TestID    string           `json:"test_id" binding:"required"`
 	Duration  int              `json:"duration" binding:"required"`

@@ -13,11 +13,44 @@ import (
 
 type OnlineTestHandler interface {
 	CreateTest(ctx *gin.Context)
+	GetTest(ctx *gin.Context)
 }
 
 type onlineTestHandler struct {
 	onlineTestService services.OnlineTestService
 	jwtUtils          utils.JWTUtils
+}
+
+// GetTest implements OnlineTestHandler.
+func (o *onlineTestHandler) GetTest(ctx *gin.Context) {
+	_, err := o.jwtUtils.TokenValid(ctx)
+	if err != nil {
+		ctx.JSON(
+			http.StatusUnauthorized,
+			gin.H{"error": err.Error()},
+		)
+		return
+	}
+
+	testID := ctx.Param("testID")
+	if testID == "" {
+		ctx.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": "testID parameter is required"},
+		)
+		return
+	}
+
+	onlineTest, err := o.onlineTestService.GetTest(testID)
+	if err != nil {
+		ctx.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": fmt.Sprintf("Failed to get test: %v", err)},
+		)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"data": onlineTest})
 }
 
 // CreateTest implements OnlineTestHandler.
@@ -31,7 +64,7 @@ func (o *onlineTestHandler) CreateTest(ctx *gin.Context) {
 		return
 	}
 
-	var req schemas.OnlineTestRequestSchema
+	var req schemas.OnlineTestSchema
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

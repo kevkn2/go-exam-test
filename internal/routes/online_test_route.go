@@ -19,6 +19,7 @@ func (o *onlineTestRoute) Routes(route *gin.Engine) {
 	onlineTest := route.Group("/api/v1/onlineTest")
 
 	onlineTest.POST("/createTest", o.onlineTestHandler.CreateTest)
+	onlineTest.GET("/getTest/:testID", o.onlineTestHandler.GetTest)
 }
 
 func NewOnlineTestRoute(onlineTestHandler handlers.OnlineTestHandler) OnlineTestRoute {

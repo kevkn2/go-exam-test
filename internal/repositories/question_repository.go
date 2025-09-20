@@ -33,7 +33,14 @@ func (q *questionRepo) GetQuestion(id uint) (*models.Question, error) {
 
 // GetQuestionsByTestID implements QuestionRepo.
 func (q *questionRepo) GetQuestionsByTestID(onlineTestID uint) ([]models.Question, error) {
-	panic("unimplemented")
+	var questions []models.Question
+
+	err := q.db.Where("online_test_id = ?", onlineTestID).Find(&questions).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return questions, nil
 }
 
 func NewQuestionRepo(db *gorm.DB) QuestionRepo {

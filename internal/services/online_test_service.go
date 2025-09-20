@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"exam-test/internal/models"
 	"exam-test/internal/repositories"
+	"exam-test/internal/schemas"
 
 	"gorm.io/datatypes"
 )
@@ -27,11 +28,70 @@ type OnlineTestService interface {
 		answer string,
 		order int,
 	) (models.Question, error)
+	GetTest(testID string) (*schemas.OnlineTestSchema, error)
 }
 
 type onlineTestService struct {
 	onlineTestRepo repositories.OnlineTestRepo
 	questionRepo   repositories.QuestionRepo
+}
+
+// GetTest implements OnlineTestService.
+func (o *onlineTestService) GetTest(testID string) (*schemas.OnlineTestSchema, error) {
+	onlineTest, err := o.onlineTestRepo.GetTest(testID)
+	if err != nil {
+		return nil, err
+	}
+
+	questionModels, err := o.questionRepo.GetQuestionsByTestID(onlineTest.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	var questions []schemas.QuestionSchema
+	for _, questionModel := range questionModels {
+		var question schemas.QuestionSchema
+
+		switch questionModel.Type {
+		case "mcq":
+			var metadata models.MCQMeta
+			err := json.Unmarshal([]byte(questionModel.Meta), &metadata)
+			if err != nil {
+				return nil, err
+			}
+
+			question = schemas.QuestionSchema{
+				Type:       questionModel.Type,
+				Text:       questionModel.Text,
+				Answer:     questionModel.Answer,
+				Options:    metadata.Options,
+				Statements: []string{},
+			}
+		case "tof":
+			var metadata models.TOFMeta
+			err := json.Unmarshal([]byte(questionModel.Meta), &metadata)
+			if err != nil {
+				return nil, err
+			}
+			question = schemas.QuestionSchema{
+				Type:       questionModel.Type,
+				Text:       questionModel.Text,
+				Answer:     questionModel.Answer,
+				Options:    []string{},
+				Statements: metadata.Statements,
+			}
+		}
+
+		questions = append(questions, question)
+	}
+
+	var onlineTestWithQuestions schemas.OnlineTestSchema
+	onlineTestWithQuestions.Title = onlineTest.Title
+	onlineTestWithQuestions.TestID = onlineTest.TestID
+	onlineTestWithQuestions.Duration = onlineTest.Duration
+	onlineTestWithQuestions.Questions = questions
+
+	return &onlineTestWithQuestions, nil
 }
 
 // CreateEssayQuestion implements OnlineTestService.
