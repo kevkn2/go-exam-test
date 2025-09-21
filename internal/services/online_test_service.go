@@ -29,11 +29,22 @@ type OnlineTestService interface {
 		order int,
 	) (models.Question, error)
 	GetTest(testID string) (*schemas.OnlineTestSchema, error)
+	GetAllTest() ([]models.OnlineTest, error)
 }
 
 type onlineTestService struct {
 	onlineTestRepo repositories.OnlineTestRepo
 	questionRepo   repositories.QuestionRepo
+}
+
+// GetAllTest implements OnlineTestService.
+func (o *onlineTestService) GetAllTest() ([]models.OnlineTest, error) {
+	onlineTests, err := o.onlineTestRepo.GetTests()
+	if err != nil {
+		return nil, err
+	}
+
+	return onlineTests, nil
 }
 
 // GetTest implements OnlineTestService.

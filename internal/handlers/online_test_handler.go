@@ -14,11 +14,47 @@ import (
 type OnlineTestHandler interface {
 	CreateTest(ctx *gin.Context)
 	GetTest(ctx *gin.Context)
+	GetAllTest(ctx *gin.Context)
 }
 
 type onlineTestHandler struct {
 	onlineTestService services.OnlineTestService
 	jwtUtils          utils.JWTUtils
+}
+
+// GetAllTest implements OnlineTestHandler.
+func (o *onlineTestHandler) GetAllTest(ctx *gin.Context) {
+	_, err := o.jwtUtils.TokenValid(ctx)
+	if err != nil {
+		ctx.JSON(
+			http.StatusUnauthorized,
+			gin.H{"error": err.Error()},
+		)
+		return
+	}
+
+	onlineTests, err := o.onlineTestService.GetAllTest()
+	if err != nil {
+		ctx.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": fmt.Sprintf("Failed to get tests: %v", err)},
+		)
+		return
+	}
+
+	var onlineTestSummaries schemas.AllOnlineTestsSchema
+	for _, test := range onlineTests {
+		summary := schemas.OnlineTestSummarySchema{
+			ID:       test.ID,
+			Title:    test.Title,
+			TestID:   test.TestID,
+			Duration: test.Duration,
+		}
+
+		onlineTestSummaries.Tests = append(onlineTestSummaries.Tests, summary)
+	}
+
+	ctx.JSON(http.StatusOK, onlineTestSummaries)
 }
 
 // GetTest implements OnlineTestHandler.

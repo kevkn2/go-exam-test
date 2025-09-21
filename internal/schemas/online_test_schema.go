@@ -14,3 +14,14 @@ type QuestionSchema struct {
 	Options    []string `json:"options"`    // For MCQ
 	Statements []string `json:"statements"` // For TOF
 }
+
+type AllOnlineTestsSchema struct {
+	Tests []OnlineTestSummarySchema `json:"tests"`
+}
+
+type OnlineTestSummarySchema struct {
+	ID       uint   `json:"id"`
+	Title    string `json:"title" binding:"required"`
+	TestID   string `json:"test_id" binding:"required"`
+	Duration int    `json:"duration" binding:"required"`
+}

@@ -18,7 +18,12 @@ type onlineTestRepo struct {
 
 // GetTests implements OnlineTestRepo.
 func (o *onlineTestRepo) GetTests() ([]models.OnlineTest, error) {
-	panic("unimplemented")
+	var onlineTests []models.OnlineTest
+	err := o.db.Find(&onlineTests).Error
+	if err != nil {
+		return nil, err
+	}
+	return onlineTests, nil
 }
 
 // CreateTest implements OnlineTestRepo.

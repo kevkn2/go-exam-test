@@ -20,6 +20,7 @@ func (o *onlineTestRoute) Routes(route *gin.Engine) {
 
 	onlineTest.POST("/createTest", o.onlineTestHandler.CreateTest)
 	onlineTest.GET("/getTest/:testID", o.onlineTestHandler.GetTest)
+	onlineTest.GET("/getAllTests", o.onlineTestHandler.GetAllTest)
 }
 
 func NewOnlineTestRoute(onlineTestHandler handlers.OnlineTestHandler) OnlineTestRoute {
