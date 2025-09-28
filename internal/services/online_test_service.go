@@ -30,11 +30,25 @@ type OnlineTestService interface {
 	) (models.Question, error)
 	GetTest(testID string) (*schemas.OnlineTestSchema, error)
 	GetAllTest() ([]models.OnlineTest, error)
+	UpdateTestData(
+		testID string,
+		onlineTestData schemas.UpdateOnlineTestSchema,
+	) (*models.OnlineTest, error)
 }
 
 type onlineTestService struct {
 	onlineTestRepo repositories.OnlineTestRepo
 	questionRepo   repositories.QuestionRepo
+}
+
+// UpdateTestData implements OnlineTestService.
+func (o *onlineTestService) UpdateTestData(testID string, onlineTestData schemas.UpdateOnlineTestSchema) (*models.OnlineTest, error) {
+	onlineTest, err := o.onlineTestRepo.UpdateTestData(testID, onlineTestData)
+	if err != nil {
+		return nil, err
+	}
+
+	return onlineTest, nil
 }
 
 // GetAllTest implements OnlineTestService.

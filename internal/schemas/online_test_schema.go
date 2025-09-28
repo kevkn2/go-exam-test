@@ -25,3 +25,8 @@ type OnlineTestSummarySchema struct {
 	TestID   string `json:"test_id" binding:"required"`
 	Duration int    `json:"duration" binding:"required"`
 }
+
+type UpdateOnlineTestSchema struct {
+	Title    *string `json:"title"`
+	Duration *int    `json:"duration"`
+}

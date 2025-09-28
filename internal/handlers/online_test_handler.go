@@ -15,11 +15,74 @@ type OnlineTestHandler interface {
 	CreateTest(ctx *gin.Context)
 	GetTest(ctx *gin.Context)
 	GetAllTest(ctx *gin.Context)
+	UpdateTestData(ctx *gin.Context)
+	UpdateQuestions(ctx *gin.Context)
 }
 
 type onlineTestHandler struct {
 	onlineTestService services.OnlineTestService
 	jwtUtils          utils.JWTUtils
+}
+
+// UpdateQuestions implements OnlineTestHandler.
+func (o *onlineTestHandler) UpdateQuestions(ctx *gin.Context) {
+	_, err := o.jwtUtils.TokenValid(ctx)
+	if err != nil {
+		ctx.JSON(
+			http.StatusUnauthorized,
+			gin.H{"error": err.Error()},
+		)
+		return
+	}
+}
+
+// UpdateTestData implements OnlineTestHandler.
+func (o *onlineTestHandler) UpdateTestData(ctx *gin.Context) {
+	_, err := o.jwtUtils.TokenValid(ctx)
+	if err != nil {
+		ctx.JSON(
+			http.StatusUnauthorized,
+			gin.H{"error": err.Error()},
+		)
+		return
+	}
+
+	testID := ctx.Param("testID")
+	if testID == "" {
+		ctx.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": "testID parameter is required"},
+		)
+		return
+	}
+
+	var onlineTestData schemas.UpdateOnlineTestSchema
+	if err := ctx.ShouldBindJSON(&onlineTestData); err != nil {
+		ctx.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": err.Error()},
+		)
+		return
+	}
+
+	onlineTest, err := o.onlineTestService.UpdateTestData(testID, onlineTestData)
+	if err != nil {
+		ctx.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": fmt.Sprintf("Failed to update test data: %v", err)},
+		)
+		return
+	}
+
+	ctx.JSON(
+		http.StatusOK,
+		schemas.OnlineTestSummarySchema{
+			ID:       onlineTest.ID,
+			Title:    onlineTest.Title,
+			TestID:   onlineTest.TestID,
+			Duration: onlineTest.Duration,
+		},
+	)
 }
 
 // GetAllTest implements OnlineTestHandler.

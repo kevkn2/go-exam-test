@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"exam-test/internal/models"
+	"exam-test/internal/schemas"
 
 	"gorm.io/gorm"
 )
@@ -10,10 +11,36 @@ type OnlineTestRepo interface {
 	CreateTest(onlineTest models.OnlineTest) (*models.OnlineTest, error)
 	GetTest(testID string) (*models.OnlineTest, error)
 	GetTests() ([]models.OnlineTest, error)
+	UpdateTestData(
+		testID string,
+		onlineTestData schemas.UpdateOnlineTestSchema,
+	) (*models.OnlineTest, error)
 }
 
 type onlineTestRepo struct {
 	db *gorm.DB
+}
+
+// UpdateTestData implements OnlineTestRepo.
+func (o *onlineTestRepo) UpdateTestData(
+	testID string,
+	onlineTestData schemas.UpdateOnlineTestSchema,
+) (*models.OnlineTest, error) {
+	var onlineTest models.OnlineTest
+	err := o.db.First(&onlineTest, "test_id = ?", testID).Error
+	if err != nil {
+		return nil, err
+	}
+
+	onlineTest.Title = *onlineTestData.Title
+	onlineTest.Duration = *onlineTestData.Duration
+
+	err = o.db.Save(&onlineTest).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &onlineTest, nil
 }
 
 // GetTests implements OnlineTestRepo.
