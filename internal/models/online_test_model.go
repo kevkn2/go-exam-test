@@ -7,10 +7,10 @@ import (
 
 type OnlineTest struct {
 	gorm.Model
-	Title     string     `gorm:"size:255;not null;"`
-	TestID    string     `gorm:"size:255;not null;"`
-	Duration  int        `gorm:"not null;"`
-	Questions []Question `gorm:"foreignKey:OnlineTestID"`
+	Title     string      `gorm:"size:255;not null;"`
+	TestID    string      `gorm:"size:255;not null;"`
+	Duration  int         `gorm:"not null;"`
+	Questions []*Question `gorm:"foreignKey:OnlineTestID"`
 }
 
 type Question struct {

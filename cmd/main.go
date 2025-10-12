@@ -25,6 +25,7 @@ func main() {
 	db := databaseConfig.Connect()
 
 	jwtUtils := utils.NewJWTUtils(env)
+	questionUtils := utils.NewQuestionUtils()
 
 	userRepository := repositories.NewUserRepository(db)
 	studentRepository := repositories.NewStudentRepository(db)
@@ -34,7 +35,7 @@ func main() {
 
 	onlineTestRepo := repositories.NewOnlineTestRepo(db)
 	questionRepo := repositories.NewQuestionRepo(db)
-	onlineTestService := services.NewOnlineTestService(onlineTestRepo, questionRepo)
+	onlineTestService := services.NewOnlineTestService(onlineTestRepo, questionRepo, questionUtils)
 	onlineTestHandler := handlers.NewOnlineTestHandler(onlineTestService, jwtUtils)
 	onlineTestRoute := routes.NewOnlineTestRoute(onlineTestHandler)
 

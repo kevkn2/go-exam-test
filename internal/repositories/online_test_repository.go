@@ -8,12 +8,12 @@ import (
 )
 
 type OnlineTestRepo interface {
-	CreateTest(onlineTest models.OnlineTest) (*models.OnlineTest, error)
+	CreateTest(onlineTest *models.OnlineTest) (*models.OnlineTest, error)
 	GetTest(testID string) (*models.OnlineTest, error)
-	GetTests() ([]models.OnlineTest, error)
+	GetTests() ([]*models.OnlineTest, error)
 	UpdateTestData(
 		testID string,
-		onlineTestData schemas.UpdateOnlineTestSchema,
+		onlineTestData *schemas.UpdateOnlineTestSchema,
 	) (*models.OnlineTest, error)
 }
 
@@ -24,7 +24,7 @@ type onlineTestRepo struct {
 // UpdateTestData implements OnlineTestRepo.
 func (o *onlineTestRepo) UpdateTestData(
 	testID string,
-	onlineTestData schemas.UpdateOnlineTestSchema,
+	onlineTestData *schemas.UpdateOnlineTestSchema,
 ) (*models.OnlineTest, error) {
 	var onlineTest models.OnlineTest
 	err := o.db.First(&onlineTest, "test_id = ?", testID).Error
@@ -44,8 +44,8 @@ func (o *onlineTestRepo) UpdateTestData(
 }
 
 // GetTests implements OnlineTestRepo.
-func (o *onlineTestRepo) GetTests() ([]models.OnlineTest, error) {
-	var onlineTests []models.OnlineTest
+func (o *onlineTestRepo) GetTests() ([]*models.OnlineTest, error) {
+	var onlineTests []*models.OnlineTest
 	err := o.db.Find(&onlineTests).Error
 	if err != nil {
 		return nil, err
@@ -54,14 +54,14 @@ func (o *onlineTestRepo) GetTests() ([]models.OnlineTest, error) {
 }
 
 // CreateTest implements OnlineTestRepo.
-func (o *onlineTestRepo) CreateTest(onlineTest models.OnlineTest) (*models.OnlineTest, error) {
-	err := o.db.Create(&onlineTest).Error
+func (o *onlineTestRepo) CreateTest(onlineTest *models.OnlineTest) (*models.OnlineTest, error) {
+	err := o.db.Create(onlineTest).Error
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &onlineTest, nil
+	return onlineTest, nil
 }
 
 // GetTest implements OnlineTestRepo.

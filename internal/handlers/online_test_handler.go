@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"exam-test/internal/models"
 	"exam-test/internal/schemas"
 	"exam-test/internal/services"
 	"exam-test/internal/utils"
@@ -53,7 +52,7 @@ func (o *onlineTestHandler) UpdateQuestions(ctx *gin.Context) {
 		return
 	}
 
-	onlineTestUpdated, err := o.onlineTestService.UpdateQuestions(testID, questions)
+	onlineTestUpdated, err := o.onlineTestService.UpdateQuestions(testID, &questions)
 	if err != nil {
 		ctx.JSON(
 			http.StatusBadRequest,
@@ -94,7 +93,7 @@ func (o *onlineTestHandler) UpdateTestData(ctx *gin.Context) {
 		return
 	}
 
-	onlineTest, err := o.onlineTestService.UpdateTestData(testID, onlineTestData)
+	onlineTest, err := o.onlineTestService.UpdateTestData(testID, &onlineTestData)
 	if err != nil {
 		ctx.JSON(
 			http.StatusBadRequest,
@@ -199,56 +198,11 @@ func (o *onlineTestHandler) CreateTest(ctx *gin.Context) {
 		return
 	}
 
-	var questions []models.Question
-
-	for questionIndex, question := range req.Questions {
-		var questionModel models.Question
-		switch question.Type {
-		case "mcq":
-			questionModel, err = o.onlineTestService.CreateMCQQuestion(
-				question.Text,
-				question.Options,
-				question.Answer,
-				questionIndex+1,
-			)
-			if err != nil {
-				ctx.JSON(
-					http.StatusInternalServerError,
-					gin.H{"error": fmt.Sprintf("Failed to create question %d: %v", questionIndex+1, err)},
-				)
-				return
-			}
-		case "tof":
-			questionModel, err = o.onlineTestService.CreateTOFQuestion(
-				question.Text,
-				question.Answer,
-				question.Statements,
-				questionIndex+1,
-			)
-			if err != nil {
-				ctx.JSON(
-					http.StatusInternalServerError,
-					gin.H{"error": fmt.Sprintf("Failed to create question %d: %v", questionIndex+1, err)},
-				)
-				return
-			}
-		default:
-			ctx.JSON(
-				http.StatusBadRequest,
-				gin.H{"error": fmt.Sprintf("Invalid question type for question %d", questionIndex+1)},
-			)
-			return
-		}
-		questions = append(questions, questionModel)
-	}
-
 	onlineTest, err := o.onlineTestService.CreateTest(
-		models.OnlineTest{
-			Title:     req.Title,
-			TestID:    req.TestID,
-			Duration:  req.Duration,
-			Questions: questions,
-		},
+		req.Title,
+		req.TestID,
+		req.Duration,
+		req.Questions,
 	)
 	if err != nil {
 		ctx.JSON(

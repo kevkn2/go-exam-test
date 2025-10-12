@@ -1,88 +1,61 @@
 package services
 
 import (
-	"encoding/json"
 	"exam-test/internal/models"
 	"exam-test/internal/repositories"
 	"exam-test/internal/schemas"
-
-	"gorm.io/datatypes"
+	"exam-test/internal/utils"
+	"strconv"
 )
 
 type OnlineTestService interface {
-	CreateTest(onlineTest models.OnlineTest) (*models.OnlineTest, error)
-	CreateMCQQuestion(
-		text string,
-		options []string,
-		answer string,
-		order int,
-	) (models.Question, error)
-	CreateTOFQuestion(
-		text string,
-		answer string,
-		statements []string,
-		order int,
-	) (models.Question, error)
-	CreateEssayQuestion(
-		text string,
-		answer string,
-		order int,
-	) (models.Question, error)
+	CreateTest(
+		title string,
+		testID string,
+		duration int,
+		questions []*schemas.QuestionSchema,
+	) (*models.OnlineTest, error)
 	GetTest(testID string) (*schemas.OnlineTestSchema, error)
-	GetAllTest() ([]models.OnlineTest, error)
+	GetAllTest() ([]*models.OnlineTest, error)
 	UpdateTestData(
 		testID string,
-		onlineTestData schemas.UpdateOnlineTestSchema,
+		onlineTestData *schemas.UpdateOnlineTestSchema,
 	) (*models.OnlineTest, error)
 	UpdateQuestions(
 		testID string,
-		questions schemas.QuestionsSchema,
+		questions *schemas.QuestionsSchema,
 	) (*schemas.OnlineTestSchema, error)
 }
 
 type onlineTestService struct {
 	onlineTestRepo repositories.OnlineTestRepo
 	questionRepo   repositories.QuestionRepo
+	questionUtils  utils.QuestionUtils
 }
 
 // UpdateQuestions implements OnlineTestService.
 func (o *onlineTestService) UpdateQuestions(
 	testID string,
-	questions schemas.QuestionsSchema,
+	questions *schemas.QuestionsSchema,
 ) (*schemas.OnlineTestSchema, error) {
 	onlineTest, err := o.onlineTestRepo.GetTest(testID)
 	if err != nil {
 		return nil, err
 	}
 
-	// oldQuestions, err := o.questionRepo.GetQuestionsByTestID(onlineTest.ID)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
 	for _, question := range questions.Questions {
 		if question.Order < 1 {
 			continue
 		}
 
-		var qModel models.Question
-		var err error
-
-		switch question.Type {
-		case "mcq":
-			qModel, err = o.CreateMCQQuestion(question.Text, question.Options, question.Answer, question.Order)
-		case "tof":
-			qModel, err = o.CreateTOFQuestion(question.Text, question.Answer, question.Statements, question.Order)
-		case "essay":
-			qModel, err = o.CreateEssayQuestion(question.Text, question.Answer, question.Order)
-		default:
-			continue
-		}
+		qModel, err := o.questionUtils.CreateQuestionModel(
+			question,
+			onlineTest.ID,
+		)
 		if err != nil {
 			return nil, err
 		}
 
-		qModel.OnlineTestID = onlineTest.ID
 		if err := o.questionRepo.UpdateQuestion(
 			onlineTest.ID,
 			question.Order,
@@ -92,11 +65,27 @@ func (o *onlineTestService) UpdateQuestions(
 		}
 	}
 
+	questionModels, err := o.questionRepo.GetQuestionsByTestID(onlineTest.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	var updatedQuestions []*schemas.QuestionSchema
+
+	for _, questionModel := range questionModels {
+		questionSchema, err := o.questionUtils.GenerateQuestionSchema(questionModel)
+		if err != nil {
+			return nil, err
+		}
+
+		updatedQuestions = append(updatedQuestions, questionSchema)
+	}
+
 	onlineTestFinal := schemas.OnlineTestSchema{
 		Title:     onlineTest.Title,
 		TestID:    onlineTest.TestID,
 		Duration:  onlineTest.Duration,
-		Questions: questions.Questions,
+		Questions: updatedQuestions,
 	}
 
 	return &onlineTestFinal, nil
@@ -105,7 +94,7 @@ func (o *onlineTestService) UpdateQuestions(
 // UpdateTestData implements OnlineTestService.
 func (o *onlineTestService) UpdateTestData(
 	testID string,
-	onlineTestData schemas.UpdateOnlineTestSchema,
+	onlineTestData *schemas.UpdateOnlineTestSchema,
 ) (*models.OnlineTest, error) {
 	onlineTest, err := o.onlineTestRepo.UpdateTestData(testID, onlineTestData)
 	if err != nil {
@@ -116,7 +105,7 @@ func (o *onlineTestService) UpdateTestData(
 }
 
 // GetAllTest implements OnlineTestService.
-func (o *onlineTestService) GetAllTest() ([]models.OnlineTest, error) {
+func (o *onlineTestService) GetAllTest() ([]*models.OnlineTest, error) {
 	onlineTests, err := o.onlineTestRepo.GetTests()
 	if err != nil {
 		return nil, err
@@ -137,38 +126,11 @@ func (o *onlineTestService) GetTest(testID string) (*schemas.OnlineTestSchema, e
 		return nil, err
 	}
 
-	var questions []schemas.QuestionSchema
+	var questions []*schemas.QuestionSchema
 	for _, questionModel := range questionModels {
-		var question schemas.QuestionSchema
-
-		switch questionModel.Type {
-		case "mcq":
-			var metadata models.MCQMeta
-			err := json.Unmarshal([]byte(questionModel.Meta), &metadata)
-			if err != nil {
-				return nil, err
-			}
-
-			question = schemas.QuestionSchema{
-				Type:       questionModel.Type,
-				Text:       questionModel.Text,
-				Answer:     questionModel.Answer,
-				Options:    metadata.Options,
-				Statements: []string{},
-			}
-		case "tof":
-			var metadata models.TOFMeta
-			err := json.Unmarshal([]byte(questionModel.Meta), &metadata)
-			if err != nil {
-				return nil, err
-			}
-			question = schemas.QuestionSchema{
-				Type:       questionModel.Type,
-				Text:       questionModel.Text,
-				Answer:     questionModel.Answer,
-				Options:    []string{},
-				Statements: metadata.Statements,
-			}
+		question, err := o.questionUtils.GenerateQuestionSchema(questionModel)
+		if err != nil {
+			return nil, err
 		}
 
 		questions = append(questions, question)
@@ -183,85 +145,50 @@ func (o *onlineTestService) GetTest(testID string) (*schemas.OnlineTestSchema, e
 	return &onlineTestWithQuestions, nil
 }
 
-// CreateEssayQuestion implements OnlineTestService.
-func (o *onlineTestService) CreateEssayQuestion(
-	text string,
-	answer string,
-	order int,
-) (models.Question, error) {
-	return models.Question{
-		Type:   "essay",
-		Text:   text,
-		Answer: answer,
-		Order:  order,
-		Meta:   nil,
-	}, nil
-}
-
-// CreateTOFQuestion implements OnlineTestService.
-func (o *onlineTestService) CreateTOFQuestion(
-	text string,
-	answer string,
-	statements []string,
-	order int,
-) (models.Question, error) {
-	tofMeta := models.TOFMeta{
-		Statements: statements,
-	}
-
-	tofMetaJSON, err := json.Marshal(tofMeta)
-	if err != nil {
-		return models.Question{}, err
-	}
-
-	return models.Question{
-		Type:   "tof",
-		Text:   text,
-		Answer: answer,
-		Order:  order,
-		Meta:   datatypes.JSON(tofMetaJSON),
-	}, nil
-
-}
-
-// CreateMCQQuestion implements OnlineTestService.
-func (o *onlineTestService) CreateMCQQuestion(
-	text string,
-	options []string,
-	answer string,
-	order int,
-) (models.Question, error) {
-	mcqMeta := models.MCQMeta{
-		Options: options,
-	}
-
-	mcqMetaJSON, err := json.Marshal(mcqMeta)
-	if err != nil {
-		return models.Question{}, err
-	}
-
-	return models.Question{
-		Type:   "mcq",
-		Text:   text,
-		Answer: answer,
-		Meta:   datatypes.JSON(mcqMetaJSON),
-		Order:  order,
-	}, nil
-}
-
 // CreateTest implements OnlineTestService.
 func (o *onlineTestService) CreateTest(
-	onlineTest models.OnlineTest,
+	title string,
+	testID string,
+	duration int,
+	questions []*schemas.QuestionSchema,
 ) (*models.OnlineTest, error) {
+	var questionModels []*models.Question
+
+	for _, question := range questions {
+		testIDUint, err := strconv.ParseUint(testID, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		questionModel, err := o.questionUtils.CreateQuestionModel(
+			question,
+			uint(testIDUint),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		questionModels = append(questionModels, questionModel)
+	}
+
+	onlineTest := &models.OnlineTest{
+		Title:     title,
+		TestID:    testID,
+		Duration:  duration,
+		Questions: questionModels,
+	}
+
 	return o.onlineTestRepo.CreateTest(onlineTest)
 }
 
 func NewOnlineTestService(
 	onlineTestRepo repositories.OnlineTestRepo,
 	questionRepo repositories.QuestionRepo,
+	questionUtils utils.QuestionUtils,
 ) OnlineTestService {
 	return &onlineTestService{
 		onlineTestRepo: onlineTestRepo,
 		questionRepo:   questionRepo,
+		questionUtils:  questionUtils,
 	}
 }

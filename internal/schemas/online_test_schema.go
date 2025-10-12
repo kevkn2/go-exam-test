@@ -1,10 +1,10 @@
 package schemas
 
 type OnlineTestSchema struct {
-	Title     string           `json:"title" binding:"required"`
-	TestID    string           `json:"test_id" binding:"required"`
-	Duration  int              `json:"duration" binding:"required"`
-	Questions []QuestionSchema `json:"questions" binding:"required,dive"`
+	Title     string            `json:"title" binding:"required"`
+	TestID    string            `json:"test_id" binding:"required"`
+	Duration  int               `json:"duration" binding:"required"`
+	Questions []*QuestionSchema `json:"questions" binding:"required,dive"`
 }
 
 type QuestionSchema struct {
@@ -33,5 +33,5 @@ type UpdateOnlineTestSchema struct {
 }
 
 type QuestionsSchema struct {
-	Questions []QuestionSchema `json:"questions"`
+	Questions []*QuestionSchema `json:"questions"`
 }

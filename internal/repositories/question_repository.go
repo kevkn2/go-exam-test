@@ -9,11 +9,11 @@ import (
 type QuestionRepo interface {
 	CreateQuestion(question models.Question) (*models.Question, error)
 	GetQuestion(id uint) (*models.Question, error)
-	GetQuestionsByTestID(onlineTestID uint) ([]models.Question, error)
+	GetQuestionsByTestID(onlineTestID uint) ([]*models.Question, error)
 	UpdateQuestion(
 		onlineTestID uint,
 		order int,
-		question models.Question,
+		question *models.Question,
 	) error
 }
 
@@ -25,17 +25,17 @@ type questionRepo struct {
 func (q *questionRepo) UpdateQuestion(
 	onlineTestID uint,
 	order int,
-	question models.Question,
+	question *models.Question,
 ) error {
 	if err := q.db.Where(
 		`online_test_id = ? AND id = ?`,
 		onlineTestID,
 		order,
-	).Delete(&question).Error; err != nil {
+	).Delete(question).Error; err != nil {
 		return err
 	}
 
-	if err := q.db.Create(&question).Error; err != nil {
+	if err := q.db.Create(question).Error; err != nil {
 		return err
 	}
 
@@ -58,8 +58,8 @@ func (q *questionRepo) GetQuestion(id uint) (*models.Question, error) {
 }
 
 // GetQuestionsByTestID implements QuestionRepo.
-func (q *questionRepo) GetQuestionsByTestID(onlineTestID uint) ([]models.Question, error) {
-	var questions []models.Question
+func (q *questionRepo) GetQuestionsByTestID(onlineTestID uint) ([]*models.Question, error) {
+	var questions []*models.Question
 
 	err := q.db.Where("online_test_id = ?", onlineTestID).Find(&questions).Error
 	if err != nil {
