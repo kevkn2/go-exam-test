@@ -34,6 +34,10 @@ type OnlineTestService interface {
 		testID string,
 		onlineTestData schemas.UpdateOnlineTestSchema,
 	) (*models.OnlineTest, error)
+	UpdateQuestions(
+		testID string,
+		questions schemas.QuestionsSchema,
+	) (*schemas.OnlineTestSchema, error)
 }
 
 type onlineTestService struct {
@@ -41,8 +45,68 @@ type onlineTestService struct {
 	questionRepo   repositories.QuestionRepo
 }
 
+// UpdateQuestions implements OnlineTestService.
+func (o *onlineTestService) UpdateQuestions(
+	testID string,
+	questions schemas.QuestionsSchema,
+) (*schemas.OnlineTestSchema, error) {
+	onlineTest, err := o.onlineTestRepo.GetTest(testID)
+	if err != nil {
+		return nil, err
+	}
+
+	// oldQuestions, err := o.questionRepo.GetQuestionsByTestID(onlineTest.ID)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	for _, question := range questions.Questions {
+		if question.Order < 1 {
+			continue
+		}
+
+		var qModel models.Question
+		var err error
+
+		switch question.Type {
+		case "mcq":
+			qModel, err = o.CreateMCQQuestion(question.Text, question.Options, question.Answer, question.Order)
+		case "tof":
+			qModel, err = o.CreateTOFQuestion(question.Text, question.Answer, question.Statements, question.Order)
+		case "essay":
+			qModel, err = o.CreateEssayQuestion(question.Text, question.Answer, question.Order)
+		default:
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		qModel.OnlineTestID = onlineTest.ID
+		if err := o.questionRepo.UpdateQuestion(
+			onlineTest.ID,
+			question.Order,
+			qModel,
+		); err != nil {
+			return nil, err
+		}
+	}
+
+	onlineTestFinal := schemas.OnlineTestSchema{
+		Title:     onlineTest.Title,
+		TestID:    onlineTest.TestID,
+		Duration:  onlineTest.Duration,
+		Questions: questions.Questions,
+	}
+
+	return &onlineTestFinal, nil
+}
+
 // UpdateTestData implements OnlineTestService.
-func (o *onlineTestService) UpdateTestData(testID string, onlineTestData schemas.UpdateOnlineTestSchema) (*models.OnlineTest, error) {
+func (o *onlineTestService) UpdateTestData(
+	testID string,
+	onlineTestData schemas.UpdateOnlineTestSchema,
+) (*models.OnlineTest, error) {
 	onlineTest, err := o.onlineTestRepo.UpdateTestData(testID, onlineTestData)
 	if err != nil {
 		return nil, err

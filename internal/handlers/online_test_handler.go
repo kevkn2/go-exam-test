@@ -34,6 +34,35 @@ func (o *onlineTestHandler) UpdateQuestions(ctx *gin.Context) {
 		)
 		return
 	}
+
+	testID := ctx.Param("testID")
+	if testID == "" {
+		ctx.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": "testID parameter is required"},
+		)
+		return
+	}
+
+	var questions schemas.QuestionsSchema
+	if err := ctx.ShouldBindJSON(&questions); err != nil {
+		ctx.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": err.Error()},
+		)
+		return
+	}
+
+	onlineTestUpdated, err := o.onlineTestService.UpdateQuestions(testID, questions)
+	if err != nil {
+		ctx.JSON(
+			http.StatusBadRequest,
+			gin.H{"error": fmt.Sprintf("Failed to update questions: %v", err)},
+		)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, onlineTestUpdated)
 }
 
 // UpdateTestData implements OnlineTestHandler.

@@ -10,10 +10,36 @@ type QuestionRepo interface {
 	CreateQuestion(question models.Question) (*models.Question, error)
 	GetQuestion(id uint) (*models.Question, error)
 	GetQuestionsByTestID(onlineTestID uint) ([]models.Question, error)
+	UpdateQuestion(
+		onlineTestID uint,
+		order int,
+		question models.Question,
+	) error
 }
 
 type questionRepo struct {
 	db *gorm.DB
+}
+
+// UpdateQuestion implements QuestionRepo.
+func (q *questionRepo) UpdateQuestion(
+	onlineTestID uint,
+	order int,
+	question models.Question,
+) error {
+	if err := q.db.Where(
+		`online_test_id = ? AND id = ?`,
+		onlineTestID,
+		order,
+	).Delete(&question).Error; err != nil {
+		return err
+	}
+
+	if err := q.db.Create(&question).Error; err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // CreateQuestion implements QuestionRepo.

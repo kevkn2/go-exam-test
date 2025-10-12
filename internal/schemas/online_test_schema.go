@@ -9,6 +9,7 @@ type OnlineTestSchema struct {
 
 type QuestionSchema struct {
 	Type       string   `json:"type" binding:"required,oneof=mcq tof essay"`
+	Order      int      `json:"order"`
 	Text       string   `json:"text" binding:"required"`
 	Answer     string   `json:"answer" binding:"required"`
 	Options    []string `json:"options"`    // For MCQ
@@ -29,4 +30,8 @@ type OnlineTestSummarySchema struct {
 type UpdateOnlineTestSchema struct {
 	Title    *string `json:"title"`
 	Duration *int    `json:"duration"`
+}
+
+type QuestionsSchema struct {
+	Questions []QuestionSchema `json:"questions"`
 }

@@ -22,6 +22,7 @@ func (o *onlineTestRoute) Routes(route *gin.Engine) {
 	onlineTest.GET("/getTest/:testID", o.onlineTestHandler.GetTest)
 	onlineTest.GET("/getAllTests", o.onlineTestHandler.GetAllTest)
 	onlineTest.PATCH("/updateTestData/:testID", o.onlineTestHandler.UpdateTestData)
+	onlineTest.PATCH("/updateQuestions/:testID", o.onlineTestHandler.UpdateQuestions)
 }
 
 func NewOnlineTestRoute(onlineTestHandler handlers.OnlineTestHandler) OnlineTestRoute {
